@@ -48,6 +48,7 @@ model Question {
   type          QuestionType
   choices       Choice[]
   answers       Answer[]
+  correctShortAnswer   String?
 
   Tryout        Tryout @relation(fields: [tryoutId], references: [id])
 }

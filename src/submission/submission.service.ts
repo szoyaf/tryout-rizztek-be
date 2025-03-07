@@ -134,7 +134,14 @@ export const submitAnswers = async (
         throw new Error("Short answer is required for ShortAnswer question");
       }
 
-      isCorrect = false;
+      isCorrect =
+        question.correctShortAnswer !== null &&
+        answer.shortAnswer.trim().toLowerCase() ===
+          question.correctShortAnswer.trim().toLowerCase();
+
+      if (isCorrect) {
+        totalScore += question.score;
+      }
     }
 
     const processedAnswer = await prisma.answer.create({
