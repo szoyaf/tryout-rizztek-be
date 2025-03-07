@@ -56,9 +56,9 @@ export const createTryout = async (data: {
   title: string;
   description: string;
   category: string;
-  duration: number;
   userId: string;
   startAt: Date | string;
+  endAt: Date | string;
   questions?: {
     text: string;
     score: number;
@@ -81,10 +81,6 @@ export const createTryout = async (data: {
     throw new Error(`Invalid category: ${data.category}`);
   }
 
-  if (!data.duration || data.duration <= 0) {
-    throw new Error("Duration must be a positive number");
-  }
-
   if (
     !data.userId ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -101,7 +97,18 @@ export const createTryout = async (data: {
     throw new Error("Invalid start date");
   }
 
-  const endAt = new Date(startAt.getTime() + data.duration * 60 * 1000);
+  const endAt =
+    data.endAt instanceof Date ? data.endAt : new Date(data.endAt);
+
+  if (isNaN(endAt.getTime())) {
+    throw new Error("Invalid end date");
+  }
+
+  if (startAt >= endAt) {
+    throw new Error("Start date must be earlier than end date");
+  }
+
+  const duration = (endAt.getTime() - startAt.getTime()) / (60 * 1000);
 
   const userExists = await prisma.user.findUnique({
     where: { id: data.userId },
@@ -159,7 +166,7 @@ export const createTryout = async (data: {
       title: data.title.trim(),
       description: data.description.trim(),
       category: data.category as Category,
-      duration: data.duration,
+      duration: duration,
       userId: data.userId,
       startAt: startAt,
       endAt: endAt,
