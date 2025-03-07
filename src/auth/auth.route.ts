@@ -51,3 +51,5 @@ route.post("/logout", async (c) => {
     return c.json({ error: "Failed to logout" }, 500);
   }
 });
+
+export default route;
