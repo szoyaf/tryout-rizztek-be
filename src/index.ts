@@ -5,7 +5,7 @@ import user from './user/user.route'
 import question from './question/question.route'
 import submission from './submission/submission.route'
 import auth from './auth/auth.route'
-import { authMiddleware } from './auth/auth.middleware';
+import { authMiddleware, blacklistCheckMiddleware } from './auth/auth.middleware';
 
 type Variables = JwtVariables;
 
@@ -13,6 +13,7 @@ const app = new Hono<{ Variables: Variables }>();
 
 app.route('/', auth)
 
+app.use('/api/*', blacklistCheckMiddleware)
 app.use('/api/*', authMiddleware)
 
 app.route('/api/tryout', tryout)

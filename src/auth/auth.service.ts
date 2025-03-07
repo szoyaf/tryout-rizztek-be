@@ -49,9 +49,13 @@ export const register = async (data: User) => {
 
 export const logout = async (token: string) => {
   try {
+    const tokenValue = token.startsWith("Bearer ")
+    ? token.substring(7)
+    : token;
+
     await prisma.blacklistedToken.create({
       data: {
-        token,
+        token: tokenValue,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
