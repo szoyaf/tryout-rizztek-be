@@ -29,7 +29,10 @@ route.post("/register", async (c) => {
     return c.json({ user }, 201);
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message.includes("User already exists")) {
+      if (
+        error.message.includes("Username already exists") ||
+        error.message.includes("Email already exists")
+      ) {
         return c.json({ error: error.message }, 400);
       }
     }
