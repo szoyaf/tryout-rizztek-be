@@ -74,6 +74,15 @@ export const getSubmissionsByTryoutId = async (tryoutId: string) => {
   });
 };
 
+export const getSubmissionsByTryoutIdAndUserId = async (
+  tryoutId: string,
+  userId: string
+) => {
+  return await prisma.submission.findFirst({
+    where: { tryoutId, userId },
+  });
+};
+
 export const submitAnswers = async (
   submissionId: string,
   answers: {
@@ -171,4 +180,13 @@ export const submitAnswers = async (
   });
 
   return updatedSubmission;
+};
+
+export const finalizeSubmission = async (submissionId: string) => {
+  return await prisma.submission.update({
+    where: { id: submissionId },
+    data: {
+      submittedAt: new Date(),
+    },
+  });
 };

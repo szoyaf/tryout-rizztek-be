@@ -15,6 +15,10 @@ route.get("/:id", async (c) => {
     where: {
       id: id,
     },
+    include: {
+      tryouts: true,
+      submissions: true,
+    }
   });
 
   if (!user) {

@@ -25,7 +25,14 @@ export const getTryouts = async (options?: {
 export const getTryoutById = async (id: string) => {
   return await prisma.tryout.findUnique({
     where: { id },
-    include: { questions: true, User: true },
+    include: {
+      questions: {
+        include: {
+          choices: true,
+        },
+      },
+      User: true,
+    },
   });
 };
 
@@ -97,8 +104,7 @@ export const createTryout = async (data: {
     throw new Error("Invalid start date");
   }
 
-  const endAt =
-    data.endAt instanceof Date ? data.endAt : new Date(data.endAt);
+  const endAt = data.endAt instanceof Date ? data.endAt : new Date(data.endAt);
 
   if (isNaN(endAt.getTime())) {
     throw new Error("Invalid end date");

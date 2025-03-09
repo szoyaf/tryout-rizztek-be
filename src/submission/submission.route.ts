@@ -53,6 +53,21 @@ route.get("/tryout/:tryoutId", async (c) => {
   }
 });
 
+route.get("/tryout/user/:tryoutId/:userId", async (c) => {
+  try {
+    const tryoutId = c.req.param("tryoutId");
+    const userId = c.req.param("userId");
+    const submission =
+      await submissionService.getSubmissionsByTryoutIdAndUserId(
+        tryoutId,
+        userId
+      );
+    return c.json({ submission }, 200);
+  } catch (error) {
+    return c.json({ error: "Failed to fetch submission" }, 500);
+  }
+});
+
 route.put("/:id/submit", async (c) => {
   try {
     const id = c.req.param("id");
@@ -69,6 +84,20 @@ route.put("/:id/submit", async (c) => {
       return c.json({ error: error.message }, 400);
     }
     return c.json({ error: "Failed to submit answers" }, 500);
+  }
+});
+
+route.put("/finalize/:id/submit", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const submission = await submissionService.finalizeSubmission(id);
+
+    return c.json({ submission }, 200);
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json({ error: error.message }, 400);
+    }
+    return c.json({ error: "Failed to finalize answers" }, 500);
   }
 });
 
