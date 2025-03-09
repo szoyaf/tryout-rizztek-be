@@ -74,6 +74,7 @@ export const createTryout = async (data: {
       choiceText: string;
       isAnswer: boolean;
     }[];
+    shortAnswer?: string;
   }[];
 }) => {
   if (!data.title || data.title.trim().length === 0) {
@@ -164,6 +165,14 @@ export const createTryout = async (data: {
           "Multiple choice questions must have at least one correct answer"
         );
       }
+
+      if (
+        question.type === "ShortAnswer" &&
+        question.shortAnswer &&
+        question.shortAnswer === ""
+      ) {
+        throw new Error("Short answer questions must have a correct answer");
+      }
     }
   }
 
@@ -190,6 +199,7 @@ export const createTryout = async (data: {
                     })),
                   }
                 : undefined,
+              shortAnswer: question.shortAnswer,
             })),
           }
         : undefined,
