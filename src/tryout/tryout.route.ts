@@ -79,6 +79,42 @@ route.put("/:id", async (c) => {
   }
 });
 
-route.delete("/", (c) => c.text("DELETE /"));
+route.delete("/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+
+    const result = await tryoutService.deleteTryout(id);
+
+    return c.json(
+      {
+        message: "Tryout deleted successfully",
+        tryout: result,
+      },
+      200
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("not found")) {
+        return c.json({ error: error.message }, 404);
+      }
+
+      if (
+        error.message.includes("Cannot update tryout with existing submissions")
+      ) {
+        return c.json(
+          {
+            error: "Cannot delete tryout that has submissions",
+            code: "SUBMISSIONS_EXIST",
+          },
+          400
+        );
+      }
+
+      return c.json({ error: error.message }, 400);
+    }
+
+    return c.json({ error: "Failed to delete tryout" }, 500);
+  }
+});
 
 export default route;

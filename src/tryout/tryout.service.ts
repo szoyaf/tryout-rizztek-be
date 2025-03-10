@@ -66,6 +66,7 @@ export const createTryout = async (data: {
   userId: string;
   startAt: Date | string;
   endAt: Date | string;
+  duration?: number;
   questions?: {
     text: string;
     score: number;
@@ -74,7 +75,7 @@ export const createTryout = async (data: {
       choiceText: string;
       isAnswer: boolean;
     }[];
-    shortAnswer?: string;
+    correctShortAnswer?: string;
   }[];
 }) => {
   if (!data.title || data.title.trim().length === 0) {
@@ -99,7 +100,11 @@ export const createTryout = async (data: {
   }
 
   const startAt =
-    data.startAt instanceof Date ? data.startAt : new Date(data.startAt);
+    data.startAt instanceof Date
+      ? data.startAt
+      : data.startAt
+      ? new Date(data.startAt)
+      : new Date();
 
   if (isNaN(startAt.getTime())) {
     throw new Error("Invalid start date");
@@ -115,7 +120,11 @@ export const createTryout = async (data: {
     throw new Error("Start date must be earlier than end date");
   }
 
-  const duration = (endAt.getTime() - startAt.getTime()) / (60 * 1000);
+  if (data.duration && data.duration <= 0) {
+    throw new Error("Duration must be a positive number");
+  } else if (!data.duration) {
+    data.duration = (endAt.getTime() - startAt.getTime()) / (60 * 1000);
+  }
 
   const userExists = await prisma.user.findUnique({
     where: { id: data.userId },
@@ -178,8 +187,8 @@ export const createTryout = async (data: {
 
       if (
         question.type === "ShortAnswer" &&
-        question.shortAnswer &&
-        question.shortAnswer === ""
+        question.correctShortAnswer &&
+        question.correctShortAnswer === ""
       ) {
         throw new Error("Short answer questions must have a correct answer");
       }
@@ -191,7 +200,7 @@ export const createTryout = async (data: {
       title: data.title.trim(),
       description: data.description.trim(),
       category: data.category as Category,
-      duration: duration,
+      duration: data.duration,
       userId: data.userId,
       startAt: startAt,
       endAt: endAt,
@@ -209,7 +218,7 @@ export const createTryout = async (data: {
                     })),
                   }
                 : undefined,
-              shortAnswer: question.shortAnswer,
+              correctShortAnswer: question.correctShortAnswer,
             })),
           }
         : undefined,
@@ -227,16 +236,34 @@ export const createTryout = async (data: {
 export const updateTryout = async (
   id: string,
   data: {
-    title?: string;
-    description?: string;
-    category?: string;
+    title: string;
+    description: string;
+    category: string;
     duration?: number;
-    startAt?: Date | string;
+    startAt: Date | string;
+    endAt: Date | string;
+    questions?: {
+      text: string;
+      score: number;
+      type: string;
+      choices?: {
+        choiceText: string;
+        isAnswer: boolean;
+      }[];
+      correctShortAnswer?: string;
+    }[];
   }
 ) => {
   const existingTryout = await prisma.tryout.findUnique({
     where: { id },
-    include: { submissions: true },
+    include: {
+      submissions: true,
+      questions: {
+        include: {
+          choices: true,
+        },
+      },
+    },
   });
 
   if (!existingTryout) {
@@ -247,67 +274,149 @@ export const updateTryout = async (
     throw new Error("Cannot update tryout with existing submissions");
   }
 
-  if (data.title !== undefined) {
-    if (!data.title || data.title.trim().length === 0) {
-      throw new Error("Title is required");
+  if (!data.title || data.title.trim().length === 0) {
+    throw new Error("Title is required");
+  }
+
+  if (!data.description || data.description.trim().length === 0) {
+    throw new Error("Description is required");
+  }
+
+  if (!isValidCategory(data.category)) {
+    throw new Error(`Invalid category: ${data.category}`);
+  }
+
+  const startAt =
+    data.startAt instanceof Date ? data.startAt : new Date(data.startAt);
+
+  if (isNaN(startAt.getTime())) {
+    throw new Error("Invalid start date");
+  }
+
+  const endAt = data.endAt instanceof Date ? data.endAt : new Date(data.endAt);
+
+  if (isNaN(endAt.getTime())) {
+    throw new Error("Invalid end date");
+  }
+
+  if (startAt >= endAt) {
+    throw new Error("Start date must be earlier than end date");
+  }
+
+  if (data.duration && data.duration <= 0) {
+    throw new Error("Duration must be a positive number");
+  } else if (!data.duration) {
+    data.duration = (endAt.getTime() - startAt.getTime()) / (60 * 1000);
+  }
+
+  if (data.questions && data.questions.length > 0) {
+    for (const question of data.questions) {
+      if (!question.text || question.text.trim().length === 0) {
+        throw new Error("Question text is required");
+      }
+
+      if (question.score === undefined || question.score <= 0) {
+        throw new Error("Question score must be a positive number");
+      }
+
+      if (!isValidQuestionType(question.type)) {
+        throw new Error(`Invalid question type: ${question.type}`);
+      }
+
+      if (
+        (question.type === "MultipleChoice" || question.type === "TrueFalse") &&
+        (!question.choices || question.choices.length === 0)
+      ) {
+        throw new Error(
+          `Choices must be provided for ${question.type} questions`
+        );
+      }
+
+      if (
+        question.type === "TrueFalse" &&
+        question.choices &&
+        question.choices.length !== 2
+      ) {
+        throw new Error("True/False questions must have exactly 2 choices");
+      }
+
+      if (
+        question.type === "TrueFalse" &&
+        question.choices &&
+        question.choices.filter((choice) => choice.isAnswer).length !== 1
+      ) {
+        throw new Error(
+          "True/False questions must have exactly one correct answer"
+        );
+      }
+
+      if (
+        question.type === "MultipleChoice" &&
+        question.choices &&
+        !question.choices.some((choice) => choice.isAnswer)
+      ) {
+        throw new Error(
+          "Multiple choice questions must have at least one correct answer"
+        );
+      }
+
+      if (
+        question.type === "ShortAnswer" &&
+        question.correctShortAnswer &&
+        question.correctShortAnswer === ""
+      ) {
+        throw new Error("Short answer questions must have a correct answer");
+      }
     }
   }
 
-  if (data.description !== undefined) {
-    if (!data.description || data.description.trim().length === 0) {
-      throw new Error("Description is required");
-    }
-  }
-
-  if (data.category !== undefined) {
-    if (!isValidCategory(data.category)) {
-      throw new Error(`Invalid category: ${data.category}`);
-    }
-  }
-
-  if (data.duration !== undefined) {
-    if (!data.duration || data.duration <= 0) {
-      throw new Error("Duration must be a positive number");
-    }
-  }
-
-  let startAt: Date | undefined;
-  let endAt: Date | undefined;
-
-  if (data.startAt !== undefined) {
-    startAt =
-      data.startAt instanceof Date ? data.startAt : new Date(data.startAt);
-    if (isNaN(startAt.getTime())) {
-      throw new Error("Invalid start date");
+  return await prisma.$transaction(async (tx) => {
+    for (const question of existingTryout.questions) {
+      await tx.choice.deleteMany({
+        where: { questionId: question.id },
+      });
     }
 
-    if (data.duration) {
-      endAt = new Date(startAt.getTime() + data.duration * 60 * 1000);
-    } else {
-      endAt = new Date(startAt.getTime() + existingTryout.duration * 60 * 1000);
-    }
-  } else if (data.duration) {
-    startAt = existingTryout.startAt;
-    endAt = new Date(startAt.getTime() + data.duration * 60 * 1000);
-  }
+    await tx.question.deleteMany({
+      where: { tryoutId: id },
+    });
 
-  return await prisma.tryout.update({
-    where: { id },
-    data: {
-      title: data.title?.trim(),
-      description: data.description?.trim(),
-      category: data.category as Category | undefined,
-      duration: data.duration,
-      startAt: startAt,
-      endAt: endAt,
-    },
-    include: {
-      questions: {
-        include: {
-          choices: true,
+    return await tx.tryout.update({
+      where: { id },
+      data: {
+        title: data.title?.trim(),
+        description: data.description?.trim(),
+        category: data.category as Category | undefined,
+        duration: data.duration,
+        startAt: startAt,
+        endAt: endAt,
+        questions: data.questions
+          ? {
+              create: data.questions.map((question) => ({
+                text: question.text.trim(),
+                score: question.score,
+                type: question.type as QuestionType,
+                correctShortAnswer: question.correctShortAnswer,
+                choices: question.choices
+                  ? {
+                      create: question.choices.map((choice) => ({
+                        choiceText: choice.choiceText.trim(),
+                        isAnswer: choice.isAnswer,
+                      })),
+                    }
+                  : undefined,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        questions: {
+          include: {
+            choices: true,
+          },
         },
       },
-    },
+    });
   });
 };
 
