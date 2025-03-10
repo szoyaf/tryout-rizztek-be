@@ -68,8 +68,9 @@ model Submission {
   tryoutId      String
   userId        String
   score         Int?
+  createdAt     DateTime    @default(now())
   submittedAt   DateTime?
-  answers       Answer[]
+  answers       Answer[]  
 
   User          User @relation(fields: [userId], references: [id])
   Tryout        Tryout @relation(fields: [tryoutId], references: [id])

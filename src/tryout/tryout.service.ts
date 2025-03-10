@@ -157,6 +157,16 @@ export const createTryout = async (data: {
       }
 
       if (
+        question.type === "TrueFalse" &&
+        question.choices &&
+        question.choices.filter((choice) => choice.isAnswer).length !== 1
+      ) {
+        throw new Error(
+          "True/False questions must have exactly one correct answer"
+        );
+      }
+
+      if (
         question.type === "MultipleChoice" &&
         question.choices &&
         !question.choices.some((choice) => choice.isAnswer)
