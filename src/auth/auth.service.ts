@@ -59,9 +59,7 @@ export const register = async (data: User) => {
 
 export const logout = async (token: string) => {
   try {
-    const tokenValue = token.startsWith("Bearer ")
-    ? token.substring(7)
-    : token;
+    const tokenValue = token.startsWith("Bearer ") ? token.substring(7) : token;
 
     await prisma.blacklistedToken.create({
       data: {

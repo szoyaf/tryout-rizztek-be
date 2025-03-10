@@ -18,7 +18,7 @@ route.get("/:id", async (c) => {
     include: {
       tryouts: true,
       submissions: true,
-    }
+    },
   });
 
   if (!user) {
