@@ -27,9 +27,9 @@ Tryout Rizztek is a platform that enables users to create, manage, and participa
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (v1.0.0+)
-- [PostgreSQL](https://www.postgresql.org/) (v14+)
-- Node.js (v18+)
+- [Bun](https://bun.sh/) (latest)
+- [PostgreSQL](https://www.postgresql.org/) (latest)
+- Node.js (latest)
 
 ### Installation
 
