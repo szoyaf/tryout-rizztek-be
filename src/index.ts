@@ -17,7 +17,7 @@ const app = new Hono<{ Variables: Variables }>();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://tryout-rizztek-zoys.vercel.app/",
     credentials: true,
   })
 );
