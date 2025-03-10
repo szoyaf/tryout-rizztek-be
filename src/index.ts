@@ -9,10 +9,18 @@ import {
   authMiddleware,
   blacklistCheckMiddleware,
 } from "./auth/auth.middleware";
+import { cors } from "hono/cors";
 
 type Variables = JwtVariables;
 
 const app = new Hono<{ Variables: Variables }>();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.route("/", auth);
 
